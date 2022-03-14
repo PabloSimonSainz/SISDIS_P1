@@ -2,7 +2,7 @@ package es.ubu.lsi.common;
 
 
 /**
- * Element type.
+ * Clase GameElement.
  * 
  * @author Alex Tomé Aguiar
  * @author Pablo Simón Sainz
@@ -18,9 +18,10 @@ public class GameElement {
 	/**
 	 * 
 	 */
-	private int id;
+	private int clientId;
 	
 	/**
+	 * Constructor de la clase.
 	 * 
 	 * @param id
 	 * @param element
@@ -50,7 +51,7 @@ public class GameElement {
 	 * @return
 	 */
 	public int getClientId() {
-		return id;
+		return clientId;
 	}
 	
 	
