@@ -10,18 +10,23 @@ import es.ubu.lsi.common.*;
  */
 public interface GameClient {
 	
-	public boolean start() {
-		
-	}
+	/**
+	 * Método que lanza el hilo del cliente.
+	 * 
+	 * @return
+	 */
+	public boolean start();
 	
-	public void sendElement(GameElement element) {
-		
-	}
+	/**
+	 * Método que envía la jugada al servidor.
+	 * 
+	 * @param element elemento a enviar o jugada
+	 */
+	public void sendElement(GameElement element);
 	
-	public void disconnect() {
-		
-		
-	}
-	
+	/**
+	 * Método de desconexión.
+	 */
+	public void disconnect();
 	
 }

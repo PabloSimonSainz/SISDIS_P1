@@ -10,19 +10,26 @@ import es.ubu.lsi.common.*;
  */
 public interface GameServer {
 	
-	public boolean startup() {
-		return false;
-	}
-	public void shutdown() {
-		
-		
-	}
-	public void broadcastRoom(GameElement element) {
-		
-	}
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean startup();
 	
-	public void remove(int id) {
-		
-		
-	}
+	/**
+	 * 
+	 */
+	public void shutdown();
+	
+	/**
+	 * 
+	 * @param element
+	 */
+	public void broadcastRoom(GameElement element);
+	
+	/**
+	 * 
+	 * @param id
+	 */
+	public void remove(int id);
 }
