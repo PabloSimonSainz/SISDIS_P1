@@ -14,7 +14,7 @@ public interface GameServer {
 	 * 
 	 * @return
 	 */
-	public boolean startup();
+	public void startup();
 	
 	/**
 	 * 

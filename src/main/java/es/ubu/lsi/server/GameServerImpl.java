@@ -17,12 +17,23 @@ public class GameServerImpl implements GameServer{
 
 	/** Por defecto el servidor se ejecuta en el puerto 1500 */
 	public static final int PORT = 1500;
-	protected DatagramSocket socket;
+	protected ServerSocket socket;
+	protected List<Socket> clients;
+	private boolean keepGoing;
 
 	public static void main(String[] args){
-		
+		new GameServerImpl().startup();
 	}
 
+	private void fillRoom(){
+		while (this.clients.size() < 2 && keepGoing){
+			try{
+				clients.add(socket.accept());
+			} catch (IOException e){
+				System.err.println("ERROR>> No se pudo conectar.");
+			}
+		}
+	}
 	
 	/**
 	 * Implementa el bucle con el servidor de sockets (ServerSocket), 
@@ -32,19 +43,21 @@ public class GameServerImpl implements GameServer{
 	 * (con su socket, flujo de entrada y flujo de salida).
 	 */
 	@Override
-	public boolean startup() {
+	public void startup() {
 		// Nota: Es importante ir guardando un registro de los hilos creados para poder 
 		// posteriormente realizar el push de los mensajes y un apagado correcto.
+		this.clients = new ArrayList<Socket>();
 
 		try {
-			this.socket = new DatagramSocket(PORT);
+			this.socket = new ServerSocket(PORT);
 		} catch (SocketException e) {
-			System.err.println(e.getMessage());
+			return;
 		}
 
-
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Not Implemented");
+		while(keepGoing){
+			fillRoom();	
+			
+		}
 	}
 
 	/**
@@ -83,25 +96,18 @@ public class GameServerImpl implements GameServer{
 
 		private int id;
 		protected DatagramSocket socket;
-		protected BufferedReader in;
+		protected ObjectInputStream in;
+		protected ObjectOutputStream out;
 
-		protected boolean moreQuotes = true;
-
-		public ServerThreadForCLient(int id) throws IOException {
+		public ServerThreadForCLient(int id) {
 			
 			this.id = id;
-
-			socket = new DatagramSocket(GameServerImpl.PORT);
 			
-			// ?? Añadir mensaje de bienvenida
-			/*
-			try {
-				in = new BufferedReader(new FileReader("message.txt"));
-			} catch (FileNotFoundException e) {
-				System.err
-						.println("Could not open quote file. Serving time instead.");
+			try{
+				socket = new DatagramSocket(GameServerImpl.PORT);
+			} catch(SocketException e) {
+				System.err.println("ERROR>> No se pudo establecer el socket.");
 			}
-			*/
 		}
 
 		/**
@@ -110,49 +116,15 @@ public class GameServerImpl implements GameServer{
 		 * métodos de la clase externa GameServer).
 		 */
 		public void run() {
+			if (socket == null)
+				return;
 
-			while (moreQuotes) {
-				try {
-					byte[] buf = new byte[256];
-
-					// receive request
-					DatagramPacket packet = new DatagramPacket(buf, buf.length);
-					socket.receive(packet);
+			while (true) {
 					
-					// figure out response
-					String dString = null;
-					if (in == null)
-						dString = new Date().toString();
-					else
-						dString = getNextQuote();
-
-					buf = dString.getBytes();
-
-					// send the response to the client at "address" and "port"
-					InetAddress address = packet.getAddress();
-					int port = packet.getPort();
-					packet = new DatagramPacket(buf, buf.length, address, port);
-					socket.send(packet);
-				} catch (IOException e) {
-					e.printStackTrace();
-					moreQuotes = false;
 				}
 			}
+
 			socket.close();
-		}
-
-		protected String getNextQuote() {
-			String returnValue = null;
-			try {
-				if ((returnValue = in.readLine()) == null) {
-					in.close();
-					moreQuotes = false;
-					returnValue = "No more quotes. Goodbye.";
-				}
-			} catch (IOException e) {
-				returnValue = "IOException occurred in server.";
-			}
-			return returnValue;
 		}
 	}
 }
