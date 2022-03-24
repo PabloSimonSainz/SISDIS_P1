@@ -2,7 +2,7 @@ package es.ubu.lsi.server;
 import es.ubu.lsi.common.*;
 
 /**
- * Interfaz del server.
+ * Define la signatura de los métodos de arranque, multidifusión y eliminación de clientes.
  * 
  * @author Alex Tomé Aguiar
  * @author Pablo Simón Sainz

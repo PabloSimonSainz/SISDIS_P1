@@ -9,9 +9,19 @@ package es.ubu.lsi.common;
  * @version 1.0
  */
 public enum ElementType {
-	PIEDRA,
-	PAPEL,
-	TIJERA,
-	LOGOUT, 
-	SHUTDOWN;
+	PIEDRA("PIEDRA"),
+	PAPEL("PAPEL"),
+	TIJERA("TIJERA"),
+	LOGOUT("LOGOUT"), 
+	SHUTDOWN("SHUTDOWN");
+
+	private String message;
+
+	ElementType(String message){
+		this.message = message;
+	}
+
+	public String toString(){
+		return this.message;
+	}
 }

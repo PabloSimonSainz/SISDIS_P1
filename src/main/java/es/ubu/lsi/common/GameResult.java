@@ -8,8 +8,18 @@ package es.ubu.lsi.common;
  * @version 1.0
  */
 public enum GameResult {
-	WIN,
-	DRAW,
-	LOSE,
-	WAITING;
+	WIN("WIN"),
+	DRAW("DRAW"),
+	LOSE("LOSE"),
+	WAITING("WAITING");
+
+	private String message;
+
+	GameResult(String message){
+		this.message = message;
+	}
+
+	public String toString(){
+		return this.message;
+	}
 }

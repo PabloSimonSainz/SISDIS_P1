@@ -2,7 +2,7 @@ package es.ubu.lsi.common;
 
 
 /**
- * Clase GameElement.
+ * Define el mensaje que se envía al servidor, incluyendo la jugada actual del jugador
  * 
  * @author Alex Tomé Aguiar
  * @author Pablo Simón Sainz
@@ -27,7 +27,9 @@ public class GameElement {
 	 * @param element
 	 */
 	public GameElement(int id, ElementType element) {
-		
+		this.clientId = id;
+
+		this.element = element;
 	}
 
 	/**
