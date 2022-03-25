@@ -19,6 +19,9 @@ public class GameServerImpl implements GameServer{
 	/** Por defecto el servidor se ejecuta en el puerto 1500 */
 	public static final int PORT = 1500;
 	
+	/** Por defecto el servidor se ejecuta como localhost */
+	public static final String hostName = "localhost";
+	
 	/** Socket del servidor */
 	protected ServerSocket socket;
 	
