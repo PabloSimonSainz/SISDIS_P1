@@ -131,30 +131,9 @@ public class GameClientImpl implements GameClient {
 		 * 
 		 */
 		public void run() {
-			String jugada;
-			System.out.println ("Introduce la jugada: ");
-			Scanner entradaEscaner = new Scanner (System.in);
-	        jugada = entradaEscaner.nextLine ();
-	        
-			if(validarInput(jugada)) {
-				
-			}else {
-				System.out.println("Error: Jugada no válida");
-			}
+			
 			
 		}
 		
-		/**
-		 * Método que comprueba que el cliente haya puesto correctamente
-		 * la jugada.
-		 * 
-		 * @param a Movimiento del jugador.
-		 * @return true si es válido, false si no.
-		 */
-		private boolean validarInput(String a) {
-			if (a == "PIEDRA" || a == "PAPEL" || a == "TIJERA"  || a == "LOGOUT"  || a == "SHUTDOWN") {
-				return true;
-		    }return false;
-		}
 	}
 }
