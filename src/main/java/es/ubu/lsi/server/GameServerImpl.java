@@ -33,6 +33,7 @@ public class GameServerImpl implements GameServer{
 	private GameElement lastMove;
 
 	public static void main(String[] args){
+		System.out.println("Iniciando Sevidor...");		
 		new GameServerImpl().startup();
 	}
 
@@ -42,7 +43,7 @@ public class GameServerImpl implements GameServer{
 	private void fillRoom(){
 		int id = 1;
 		
-		while (lastMove != null && lastMove.getElement() != ElementType.SHUTDOWN){
+		while (lastMove == null || lastMove.getElement() != ElementType.SHUTDOWN){
 			try{
 				if (this.clients.size() < 2) {
 					ServerThreadForClient thread = new ServerThreadForClient(id);
@@ -91,6 +92,7 @@ public class GameServerImpl implements GameServer{
 		
 		fillRoom();
 		
+		System.out.println("Cerrando Servidor...");
 		shutdown();
 	}
 
@@ -163,6 +165,7 @@ public class GameServerImpl implements GameServer{
 	            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 	            
 	        	String inputLine;
+	        	
 	            while(true) {
 	            	try {
 	            		out.println("> Introduzca su jugada: ");
