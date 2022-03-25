@@ -1,8 +1,10 @@
 package es.ubu.lsi.client;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
@@ -13,6 +15,7 @@ import java.util.Scanner;
 
 import es.ubu.lsi.common.ElementType;
 import es.ubu.lsi.common.GameElement;
+import es.ubu.lsi.common.GameResult;
 import es.ubu.lsi.server.GameServerImpl;
 
 
@@ -28,8 +31,11 @@ public class GameClientImpl implements GameClient {
 	private String server;
 	private String username;
 	private int port;
+	
 	/** Socket del servidor */
 	protected Socket cliente;
+	private PrintWriter out;
+	private BufferedReader in;
 	
 	/**
 	 * Constructor de la clase.
@@ -47,12 +53,14 @@ public class GameClientImpl implements GameClient {
 		
 		try {
 			cliente = new Socket(server, port);
+			this.out = new PrintWriter(cliente.getOutputStream(), true);                   
+            this.in = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
 			start();
 		}catch (UnknownHostException e) {
-            System.err.println("ERROR: Don't know about host " + server);
+            System.err.println("Don't know about host " + server);
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("ERROR: Couldn't get I/O for the connection to " + server);
+            System.err.println("Couldn't get I/O for the connection to " + server);
             System.exit(1);
         } 
 	}
@@ -66,35 +74,26 @@ public class GameClientImpl implements GameClient {
 	 */
 	@Override
 	public boolean start() throws IOException {
-		String hostName = server;
 		String jugada;
-		System.out.println ("Introduce la jugada: ");
-        BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         new GameClientListener();
-        //int id = ServerThreadForClient.getIdRoom();
-        
+        //int id = ServerThreadForClient.getIdRoom();     
         try {
-	        while ((jugada = stdIn.readLine()) != null) {
-				if(jugada == "tijera" || jugada == "TIJERA"){
-					GameElement elemento = new GameElement(1,ElementType.TIJERA);
-					sendElement(elemento);	
-				}else if (jugada == "piedra" || jugada == "PIEDRA") {
-					GameElement elemento = new GameElement(1,ElementType.PIEDRA);
-					sendElement(elemento);
-				}else if(jugada == "papel" || jugada == "PAPEL") {
-					GameElement elemento = new GameElement(1,ElementType.PAPEL);
-					sendElement(elemento);
-				}else if(jugada == "logout" || jugada == "LOGOUT") {
-					GameElement elemento = new GameElement(1,ElementType.LOGOUT);
-					sendElement(elemento);
+        	ElementType move;
+        	jugada = in.readLine();
+	        while (jugada != "SHUTDOWN") {
+	        	move = ElementType.valueOf(jugada);
+	        	GameElement elemento = new GameElement(1, move);
+				if(move == ElementType.LOGOUT) {
 					disconnect();
 				}
-				return true;
-	        }
-        }catch(IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " + hostName);
-                System.exit(1);
-        }return false; 
+				sendElement(elemento);
+				
+			}return true;
+	        
+        } catch(IllegalArgumentException e) {
+    		out.println("(!) Comando no valido (!)");
+    	}
+		return false;
 		
 	}
 	
@@ -105,7 +104,8 @@ public class GameClientImpl implements GameClient {
 	 */
 	@Override
 	public void sendElement(GameElement element){
-		
+		String enviar = element.toString();
+		out.write(enviar);
 	}
 	
 	/**
@@ -113,7 +113,14 @@ public class GameClientImpl implements GameClient {
 	 */
 	@Override
 	public void disconnect() {
-		
+		try {
+			in.close();
+			out.close();
+			cliente.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -138,12 +145,19 @@ public class GameClientImpl implements GameClient {
 	public class GameClientListener implements Runnable{
 		
 		/**
-		 * 
+		 * Método run del cliente. Arranca el hilo que escucha al servidor.
 		 */
 		@Override
 		public void run() {
-			
-			
+			try {
+				String respuesta =  in.readLine();
+				if(respuesta != null) {		
+					System.out.println(respuesta);
+				}
+			}catch (IOException e){
+				System.err.println("I/0 Exception");
+				e.printStackTrace();
+			}
 		}
 		
 	}
