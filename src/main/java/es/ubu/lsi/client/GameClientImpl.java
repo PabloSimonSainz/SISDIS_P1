@@ -37,9 +37,9 @@ public class GameClientImpl implements GameClient {
 		this.server = server;
 		this.port = port;
 		this.username = username;
-		Socket cliente = new Socket(server, port);
 		
 		try {
+			Socket cliente = new Socket(server, port);
 			start();
 		}catch (UnknownHostException e) {
             System.err.println("Don't know about host " + server);
@@ -76,9 +76,11 @@ public class GameClientImpl implements GameClient {
 			}else if(jugada == "logout" || jugada == "LOGOUT") {
 				GameElement elemento = new GameElement(1,ElementType.LOGOUT);
 				sendElement(elemento);
+				disconnect();
 			}
+			return true;
         }catch (Exception e) {
-            
+            return false;
         }  
 	}
 	
