@@ -4,6 +4,7 @@ import es.ubu.lsi.common.GameElement;
 import es.ubu.lsi.common.ElementType;
 import java.io.*;
 import java.net.*;
+import java.sql.SQLClientInfoException;
 import java.util.*;
 
 /**
@@ -26,7 +27,7 @@ public class GameServerImpl implements GameServer{
 	protected ServerSocket socket;
 	
 	/** Hashtable que contiene un par Id con socket. */
-	protected Hashtable<ServerThreadForClient, Socket> clients;
+	protected Hashtable<Integer, Socket> clients;
 	
 	/** Booleano que marca si se quiere mantener el servidor activo. */
 	private GameElement lastMove;
@@ -45,7 +46,7 @@ public class GameServerImpl implements GameServer{
 			try{
 				if (this.clients.size() < 2) {
 					ServerThreadForClient thread = new ServerThreadForClient(id);
-					clients.put(thread, socket.accept());
+					clients.put(thread.idRoom, socket.accept());
 					
 					thread.run();
 					
@@ -78,7 +79,7 @@ public class GameServerImpl implements GameServer{
 		
 		// Nota: Es importante ir guardando un registro de los hilos creados para poder 
 		// posteriormente realizar el push de los mensajes y un apagado correcto.
-		this.clients = new Hashtable<ServerThreadForClient, Socket>();
+		this.clients = new Hashtable<Integer, Socket>();
 
 		try {
 			this.socket = new ServerSocket(PORT);
@@ -98,9 +99,9 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void shutdown() {
-		Enumeration<ServerThreadForClient> iter = clients.keys();
+		Enumeration<Integer> iter = clients.keys();
 		while(iter.hasMoreElements()) {
-			
+			remove(iter.nextElement());
 		}
 	}
 
@@ -109,6 +110,8 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void broadcastRoom(GameElement element) {
+		lastMove = element;
+		
 		
 	}
 
@@ -117,8 +120,12 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void remove(int id) {
-		// TODO Auto-generated method stub
-		
+		try {
+			clients.get(id).close();
+		} catch (IOException e) {
+			System.out.println("<!> Los elementos de " + clients.get(id) + "ya han sido cerrados.");
+		}
+		clients.remove(id);
 	}
 	
 	/**
@@ -129,7 +136,12 @@ public class GameServerImpl implements GameServer{
 	public class ServerThreadForClient extends Thread{
 
 		private int idRoom;
-		private ServerThreadForClient rival;
+		
+		private Socket clientSocket;
+		
+		private PrintWriter out;
+		
+		private BufferedReader in;
 
 		public int getIdRoom() {
 			return idRoom;
@@ -145,10 +157,10 @@ public class GameServerImpl implements GameServer{
 		 * métodos de la clase externa GameServer).
 		 */
 		public void run() {
-	        try (Socket clientSocket = clients.get(this);
-		            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);                   
-		            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-        		) {
+	        try {
+	        	this.clientSocket = clients.get(this.idRoom);
+	            this.out = new PrintWriter(clientSocket.getOutputStream(), true);                   
+	            this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 	            
 	        	String inputLine;
 	            while(true) {
@@ -162,19 +174,28 @@ public class GameServerImpl implements GameServer{
 	            		
 	            		if (move == ElementType.LOGOUT) break;
 	            		
-	            		lastMove = new GameElement(this.idRoom, move);	
+	            		broadcastRoom(new GameElement(this.idRoom, move));	
 	            	} catch(IllegalArgumentException e) {
 	            		out.println("(!) Comando no valido (!)");
 	            	}
 	            }
 	            
-	            out.close();
-	            in.close();
-	            clientSocket.close();
+	            close();
 	        } catch (IOException e) {
 	            System.out.println(">> ERROR: El hilo " + this.idRoom +" no se pudo conectar.");
 	            System.out.println(e.getMessage());
 	        }
+		}
+		
+		protected void close() {
+			try {
+				this.out.close();
+				this.in.close();
+				this.clientSocket.close();
+			} catch (IOException e) {
+				System.out.println("<!> Los elementos de " + this.idRoom + "ya han sido cerrados.");
+				System.out.println(e.getMessage());
+			}
 		}
 	}
 }
