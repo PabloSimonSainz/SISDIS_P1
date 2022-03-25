@@ -2,6 +2,7 @@ package es.ubu.lsi.server;
 
 import es.ubu.lsi.common.GameElement;
 import java.io.*;
+import java.lang.annotation.ElementType;
 import java.net.*;
 import java.util.*;
 
@@ -17,20 +18,50 @@ public class GameServerImpl implements GameServer{
 
 	/** Por defecto el servidor se ejecuta en el puerto 1500 */
 	public static final int PORT = 1500;
+	
+	/** Socket del servidor */
 	protected ServerSocket socket;
-	protected List<Socket> clients;
+	
+	/** Hashtable que contiene un par Id con socket. */
+	protected Hashtable<ServerThreadForClient, Socket> clients;
+	
+	/** Booleano que marca si se quiere mantener el servidor activo. */
 	private boolean keepGoing;
 
 	public static void main(String[] args){
 		new GameServerImpl().startup();
 	}
 
+	/**
+	 * Se encarga de hacer el bucle que recibe a los clientes.
+	 */
 	private void fillRoom(){
-		while (this.clients.size() < 2 && keepGoing){
+		int id = 1;
+		
+		while (keepGoing){
 			try{
-				clients.add(socket.accept());
+				if (this.clients.size() < 2) {
+					ServerThreadForClient thread = new ServerThreadForClient(id);
+					clients.put(thread, socket.accept());
+					
+					thread.run();
+					
+					id++;
+					
+					if(this.clients.size() == 2) 
+						clients.keys().nextElement().SetRival(clients.keys().nextElement());
+				} else {
+					Socket temp = socket.accept();
+					PrintWriter out = new PrintWriter(temp.getOutputStream(), true);
+					
+					out.println(">> Full capacity of the room, leaving server...");
+					
+					out.close();
+					temp.close();
+				}
 			} catch (IOException e){
-				System.err.println("ERROR>> No se pudo conectar.");
+				System.err.println(">> ERROR: No se pudo conectar.");
+				System.err.println(e.getMessage());
 			}
 		}
 	}
@@ -44,20 +75,22 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void startup() {
+		
 		// Nota: Es importante ir guardando un registro de los hilos creados para poder 
 		// posteriormente realizar el push de los mensajes y un apagado correcto.
-		this.clients = new ArrayList<Socket>();
+		this.clients = new Hashtable<ServerThreadForClient, Socket>();
 
 		try {
 			this.socket = new ServerSocket(PORT);
-		} catch (SocketException e) {
+		} catch (IOException e) {
+			System.err.println(">> ERROR: No se pudo establecer el servidor.");
+			System.err.println(e.getMessage());
 			return;
 		}
-
-		while(keepGoing){
-			fillRoom();	
-			
-		}
+		
+		fillRoom();
+		
+		shutdown();
 	}
 
 	/**
@@ -65,8 +98,10 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void shutdown() {
-		// TODO Auto-generated method stub
-		
+		Enumeration<ServerThreadForClient> iter = clients.keys();
+		while(iter.hasMoreElements()) {
+			
+		}
 	}
 
 	/**
@@ -92,22 +127,17 @@ public class GameServerImpl implements GameServer{
 	 * @author Pablo Simón Sainz
 	 * @version 1.0
 	 */
-	public class ServerThreadForCLient extends Thread{
+	public class ServerThreadForClient extends Thread{
 
-		private int id;
-		protected DatagramSocket socket;
-		protected ObjectInputStream in;
-		protected ObjectOutputStream out;
+		private int idRoom;
+		private ServerThreadForClient rival;
 
-		public ServerThreadForCLient(int id) {
-			
-			this.id = id;
-			
-			try{
-				socket = new DatagramSocket(GameServerImpl.PORT);
-			} catch(SocketException e) {
-				System.err.println("ERROR>> No se pudo establecer el socket.");
-			}
+		public int getIdRoom() {
+			return idRoom;
+		}
+		
+		public ServerThreadForClient(int id){
+			this.idRoom = id;
 		}
 
 		/**
@@ -116,15 +146,36 @@ public class GameServerImpl implements GameServer{
 		 * métodos de la clase externa GameServer).
 		 */
 		public void run() {
-			if (socket == null)
-				return;
-
-			while (true) {
-					
-				}
-			}
-
-			socket.close();
+	        try (Socket clientSocket = clients.get(this);
+		            PrintWriter out =
+			                new PrintWriter(clientSocket.getOutputStream(), true);                   
+		            BufferedReader in = new BufferedReader(
+		                new InputStreamReader(clientSocket.getInputStream()));
+        		) {
+	            
+	            String inputLine;
+	            while ((inputLine = in.readLine()) != null) {
+	            	
+	            }
+	            
+	            // Cerramos el ciclo de vida del socket.
+	            out.close();
+	            in.close();
+	            clientSocket.close();
+	        } catch (IOException e) {
+	            System.out.println(">> ERROR: No se pudo conectar al puerto "
+	                + GameServerImpl.PORT + " o establecer conexión.");
+	            System.out.println(e.getMessage());
+	        }
+		}
+		
+		protected void SetRival(ServerThreadForClient rival) {
+			this.rival = rival;
+			rival.rival = this;
+		}
+		
+		protected void removeRival() {
+			this.rival = null;
 		}
 	}
 }
