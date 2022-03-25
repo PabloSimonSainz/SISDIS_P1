@@ -6,12 +6,14 @@ import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Scanner;
 
 import es.ubu.lsi.common.ElementType;
 import es.ubu.lsi.common.GameElement;
+import es.ubu.lsi.server.GameServerImpl;
 
 
 /**
@@ -26,6 +28,9 @@ public class GameClientImpl implements GameClient {
 	private String server;
 	private String username;
 	private int port;
+	/** Socket del servidor */
+	protected Socket cliente;
+	
 	/**
 	 * Constructor de la clase.
 	 * 
@@ -41,7 +46,7 @@ public class GameClientImpl implements GameClient {
 		this.username = username;
 		
 		try {
-			Socket cliente = new Socket(server, port);
+			cliente = new Socket(server, port);
 			start();
 		}catch (UnknownHostException e) {
             System.err.println("Don't know about host " + server);
@@ -65,6 +70,9 @@ public class GameClientImpl implements GameClient {
 		String jugada;
 		System.out.println ("Introduce la jugada: ");
         BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
+        new GameClientListener();
+        //int id = ServerThreadForClient.getIdRoom();
+        
         try {
 	        while ((jugada = stdIn.readLine()) != null) {
 				if(jugada == "tijera" || jugada == "TIJERA"){
@@ -116,13 +124,7 @@ public class GameClientImpl implements GameClient {
 	 * @throws IOException 
 	 */
 	public void main(String[] args) throws IOException {
-		 MulticastSocket socket = new MulticastSocket(1500);
-	     InetAddress address = InetAddress.getByName("localhost");
-	     socket.joinGroup(address);
-
-	     DatagramPacket packet;
-	     socket.leaveGroup(address);
-	 	 socket.close();
+		new GameClientImpl(GameServerImpl.hostName, GameServerImpl.PORT, args[0]);
 	}
 	
 	/**
@@ -133,11 +135,12 @@ public class GameClientImpl implements GameClient {
 	 * @author Pablo Simón Sainz
 	 * @version 1.0
 	 */
-	public class GameClientListener{
+	public class GameClientListener implements Runnable{
 		
 		/**
 		 * 
 		 */
+		@Override
 		public void run() {
 			
 			
