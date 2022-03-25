@@ -1,4 +1,6 @@
 package es.ubu.lsi.client;
+import java.io.IOException;
+
 import es.ubu.lsi.common.*;
 
 /**
@@ -14,8 +16,9 @@ public interface GameClient {
 	 * Método que lanza el hilo del cliente.
 	 * 
 	 * @return
+	 * @throws IOException 
 	 */
-	public boolean start();
+	public boolean start() throws IOException;
 	
 	/**
 	 * Método que envía la jugada al servidor.

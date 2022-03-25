@@ -1,6 +1,8 @@
 package es.ubu.lsi.client;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
@@ -55,33 +57,37 @@ public class GameClientImpl implements GameClient {
 	 * escuchar al servidor.
 	 * 
 	 * @return
+	 * @throws IOException 
 	 */
 	@Override
-	public boolean start() {
+	public boolean start() throws IOException {
 		String hostName = server;
 		String jugada;
 		System.out.println ("Introduce la jugada: ");
-		Scanner entradaEscaner = new Scanner (System.in);
-        jugada = entradaEscaner.nextLine ();
+        BufferedReader stdIn = new BufferedReader(new InputStreamReader(System.in));
         try {
-			if(jugada == "tijera" || jugada == "TIJERA"){
-				GameElement elemento = new GameElement(1,ElementType.TIJERA);
-				sendElement(elemento);	
-			}else if (jugada == "piedra" || jugada == "PIEDRA") {
-				GameElement elemento = new GameElement(1,ElementType.PIEDRA);
-				sendElement(elemento);
-			}else if(jugada == "papel" || jugada == "PAPEL") {
-				GameElement elemento = new GameElement(1,ElementType.PAPEL);
-				sendElement(elemento);
-			}else if(jugada == "logout" || jugada == "LOGOUT") {
-				GameElement elemento = new GameElement(1,ElementType.LOGOUT);
-				sendElement(elemento);
-				disconnect();
-			}
-			return true;
-        }catch (Exception e) {
-            return false;
-        }  
+	        while ((jugada = stdIn.readLine()) != null) {
+				if(jugada == "tijera" || jugada == "TIJERA"){
+					GameElement elemento = new GameElement(1,ElementType.TIJERA);
+					sendElement(elemento);	
+				}else if (jugada == "piedra" || jugada == "PIEDRA") {
+					GameElement elemento = new GameElement(1,ElementType.PIEDRA);
+					sendElement(elemento);
+				}else if(jugada == "papel" || jugada == "PAPEL") {
+					GameElement elemento = new GameElement(1,ElementType.PAPEL);
+					sendElement(elemento);
+				}else if(jugada == "logout" || jugada == "LOGOUT") {
+					GameElement elemento = new GameElement(1,ElementType.LOGOUT);
+					sendElement(elemento);
+					disconnect();
+				}
+				return true;
+	        }
+        }catch(IOException e) {
+            System.err.println("Couldn't get I/O for the connection to " + hostName);
+                System.exit(1);
+        }return false; 
+		
 	}
 	
 	/**
