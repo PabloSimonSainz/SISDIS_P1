@@ -1,6 +1,7 @@
 package es.ubu.lsi.server;
 
 import es.ubu.lsi.common.GameElement;
+import es.ubu.lsi.common.GameResult;
 import es.ubu.lsi.common.ElementType;
 import java.io.*;
 import java.net.*;
@@ -62,8 +63,8 @@ public class GameServerImpl implements GameServer{
 					temp.close();
 				}
 			} catch (IOException e){
-				System.err.println(">> ERROR: No se pudo conectar.");
-				System.err.println(e.getMessage());
+				System.out.println(">> ERROR: No se pudo conectar.");
+				System.out.println(e.getMessage());
 			}
 		}
 	}
@@ -85,8 +86,8 @@ public class GameServerImpl implements GameServer{
 		try {
 			this.socket = new ServerSocket(PORT);
 		} catch (IOException e) {
-			System.err.println(">> ERROR: No se pudo establecer el servidor.");
-			System.err.println(e.getMessage());
+			System.out.println(">> ERROR: No se pudo establecer el servidor.");
+			System.out.println(e.getMessage());
 			return;
 		}
 		
@@ -107,14 +108,94 @@ public class GameServerImpl implements GameServer{
 		}
 	}
 
+	private GameResult getResult(GameElement move1, GameElement move2) {
+		ElementType m1 = move1.getElement();
+		ElementType m2 = move1.getElement();
+		
+		if(m1 == m2)
+			return GameResult.DRAW;
+		
+		if(m1 == null || m2 == null)
+			return GameResult.WAITING;
+		
+		switch(m1) {
+		case PIEDRA:
+			if (m2 == ElementType.TIJERA)
+				return GameResult.WIN;
+			if (m2 == ElementType.PAPEL)
+				return GameResult.LOSE;
+		case PAPEL:
+			if (m2 == ElementType.PIEDRA)
+				return GameResult.WIN;
+			if (m2 == ElementType.TIJERA)
+				return GameResult.LOSE;
+		case TIJERA:
+			if (m2 == ElementType.PAPEL)
+				return GameResult.WIN;
+			if (m2 == ElementType.PIEDRA)
+				return GameResult.LOSE;
+		default:
+			return null;
+		}
+	}
+	
+	private void SendMessageToClient(String message, int id) {
+		Enumeration<Integer> iter = clients.keys();
+		int pointer;
+		
+		while (iter.hasMoreElements()) {
+			pointer = iter.nextElement();
+			
+			if (pointer == id) {
+				Socket temp = clients.get(pointer);
+				
+				try {
+					PrintWriter out = new PrintWriter(temp.getOutputStream(), true);
+					out.println(message);
+					return;
+				} catch (IOException e) {
+					System.out.println("ERROR: No se pudo contactar con <" + pointer + ">.");
+				}
+			}
+		}
+		
+		System.out.println("ERROR: Id <" + id + "> no encontrada.");
+	}
+	
 	/**
 	 * Envía el resultado sólo a los clientes de una determinada sala (flujo de salida)
 	 */
 	@Override
 	public void broadcastRoom(GameElement element) {
-		lastMove = element;
+		GameResult result = getResult(element, lastMove);
+		
+		if (result == GameResult.WAITING) {
+			lastMove = element;
+			return;
+		}
+			
+		
+		if (result == null) {
+			Enumeration<Integer> iter = clients.keys();
+			
+			while (iter.hasMoreElements()) {
+				int pointer = iter.nextElement();
+				
+				Socket temp = clients.get(pointer);
+					
+				try {
+					PrintWriter out = new PrintWriter(temp.getOutputStream(), true);
+					out.println(">> CERRANDO SERVIDOR");
+					return;
+				} catch (IOException e) {
+					System.out.println("ERROR: No se pudo contactar con <" + pointer + ">.");
+				}
+			}
+		}
 		
 		
+		SendMessageToClient(result.toString(), element.getClientId());
+		SendMessageToClient(getResult(lastMove, element).toString(), lastMove.getClientId());
 	}
 
 	/**
@@ -167,20 +248,24 @@ public class GameServerImpl implements GameServer{
 	        	String inputLine;
 	        	
 	            while(true) {
-	            	try {
-	            		out.println("> Introduzca su jugada: ");
-	            		inputLine = in.readLine();
-	            		
-	            		if (lastMove.getElement() == ElementType.SHUTDOWN) break;
-	            		
-	            		ElementType move = ElementType.valueOf(inputLine);
-	            		
-	            		if (move == ElementType.LOGOUT) break;
-	            		
-	            		broadcastRoom(new GameElement(this.idRoom, move));	
-	            	} catch(IllegalArgumentException e) {
-	            		out.println("(!) Comando no valido (!)");
-	            	}
+	            	if(lastMove.getClientId() != this.idRoom)
+		            	try {
+		            		if (lastMove.getElement() == ElementType.SHUTDOWN) {
+		            			out.println("- Se ha cerrado el servidor.");
+		            			break;
+		            		}
+		            		
+		            		out.println("> Introduzca su jugada: ");
+		            		inputLine = in.readLine();
+		            		
+		            		ElementType move = ElementType.valueOf(inputLine);
+		            		
+		            		if (move == ElementType.LOGOUT) break;
+		            		
+		            		broadcastRoom(new GameElement(this.idRoom, move));	
+		            	} catch(IllegalArgumentException e) {
+		            		out.println("(!) Comando no valido (!)");
+		            	}
 	            }
 	            
 	            close();

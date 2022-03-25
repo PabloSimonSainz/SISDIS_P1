@@ -49,10 +49,10 @@ public class GameClientImpl implements GameClient {
 			cliente = new Socket(server, port);
 			start();
 		}catch (UnknownHostException e) {
-            System.err.println("Don't know about host " + server);
+            System.err.println("ERROR: Don't know about host " + server);
             System.exit(1);
         } catch (IOException e) {
-            System.err.println("Couldn't get I/O for the connection to " + server);
+            System.err.println("ERROR: Couldn't get I/O for the connection to " + server);
             System.exit(1);
         } 
 	}
