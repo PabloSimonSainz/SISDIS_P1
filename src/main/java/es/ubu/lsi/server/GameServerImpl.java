@@ -1,8 +1,8 @@
 package es.ubu.lsi.server;
 
 import es.ubu.lsi.common.GameElement;
+import es.ubu.lsi.common.ElementType;
 import java.io.*;
-import java.lang.annotation.ElementType;
 import java.net.*;
 import java.util.*;
 
@@ -26,7 +26,7 @@ public class GameServerImpl implements GameServer{
 	protected Hashtable<ServerThreadForClient, Socket> clients;
 	
 	/** Booleano que marca si se quiere mantener el servidor activo. */
-	private boolean keepGoing;
+	private GameElement lastMove;
 
 	public static void main(String[] args){
 		new GameServerImpl().startup();
@@ -38,7 +38,7 @@ public class GameServerImpl implements GameServer{
 	private void fillRoom(){
 		int id = 1;
 		
-		while (keepGoing){
+		while (lastMove != null && lastMove.getElement() != ElementType.SHUTDOWN){
 			try{
 				if (this.clients.size() < 2) {
 					ServerThreadForClient thread = new ServerThreadForClient(id);
@@ -47,9 +47,6 @@ public class GameServerImpl implements GameServer{
 					thread.run();
 					
 					id++;
-					
-					if(this.clients.size() == 2) 
-						clients.keys().nextElement().SetRival(clients.keys().nextElement());
 				} else {
 					Socket temp = socket.accept();
 					PrintWriter out = new PrintWriter(temp.getOutputStream(), true);
@@ -109,7 +106,6 @@ public class GameServerImpl implements GameServer{
 	 */
 	@Override
 	public void broadcastRoom(GameElement element) {
-		// TODO Auto-generated method stub
 		
 	}
 
@@ -147,35 +143,35 @@ public class GameServerImpl implements GameServer{
 		 */
 		public void run() {
 	        try (Socket clientSocket = clients.get(this);
-		            PrintWriter out =
-			                new PrintWriter(clientSocket.getOutputStream(), true);                   
-		            BufferedReader in = new BufferedReader(
-		                new InputStreamReader(clientSocket.getInputStream()));
+		            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);                   
+		            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
         		) {
 	            
-	            String inputLine;
-	            while ((inputLine = in.readLine()) != null) {
-	            	
+	        	String inputLine;
+	            while(true) {
+	            	try {
+	            		out.println("> Introduzca su jugada: ");
+	            		inputLine = in.readLine();
+	            		
+	            		if (lastMove.getElement() == ElementType.SHUTDOWN) break;
+	            		
+	            		ElementType move = ElementType.valueOf(inputLine);
+	            		
+	            		if (move == ElementType.LOGOUT) break;
+	            		
+	            		lastMove = new GameElement(this.idRoom, move);	
+	            	} catch(IllegalArgumentException e) {
+	            		out.println("(!) Comando no valido (!)");
+	            	}
 	            }
 	            
-	            // Cerramos el ciclo de vida del socket.
 	            out.close();
 	            in.close();
 	            clientSocket.close();
 	        } catch (IOException e) {
-	            System.out.println(">> ERROR: No se pudo conectar al puerto "
-	                + GameServerImpl.PORT + " o establecer conexión.");
+	            System.out.println(">> ERROR: El hilo " + this.idRoom +" no se pudo conectar.");
 	            System.out.println(e.getMessage());
 	        }
-		}
-		
-		protected void SetRival(ServerThreadForClient rival) {
-			this.rival = rival;
-			rival.rival = this;
-		}
-		
-		protected void removeRival() {
-			this.rival = null;
 		}
 	}
 }
